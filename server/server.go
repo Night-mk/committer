@@ -31,6 +31,7 @@ const (
 	THREE_PHASE = "three-phase"
 )
 
+// commitServer端，实现所有服务接口
 // Server holds server instance, node config and connections to followers (if it's a coordinator node)
 type Server struct {
 	pb.UnimplementedCommitServer
@@ -55,6 +56,7 @@ func (s *Server) Propose(ctx context.Context, req *pb.ProposeRequest) (*pb.Respo
 		span, ctx = s.Tracer.StartSpanFromContext(ctx, "ProposeHandle")
 		defer span.Finish()
 	}
+	fmt.Println("execute server propose")
 	s.SetProgressForCommitPhase(req.Index, false)
 	return s.ProposeHandler(ctx, req, s.ProposeHook)
 }
@@ -65,6 +67,7 @@ func (s *Server) Precommit(ctx context.Context, req *pb.PrecommitRequest) (*pb.R
 		span, _ = s.Tracer.StartSpanFromContext(ctx, "PrecommitHandle")
 		defer span.Finish()
 	}
+	fmt.Println("execute server precommit")
 	if s.Config.CommitType == THREE_PHASE {
 		ctx, _ = context.WithTimeout(context.Background(), time.Duration(s.Config.Timeout)*time.Millisecond)
 		go func(ctx context.Context) {
@@ -92,7 +95,7 @@ func (s *Server) Commit(ctx context.Context, req *pb.CommitRequest) (resp *pb.Re
 		span, ctx = s.Tracer.StartSpanFromContext(ctx, "CommitHandle")
 		defer span.Finish()
 	}
-
+	fmt.Println("execute server commit")
 	if s.Config.CommitType == THREE_PHASE {
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
@@ -151,6 +154,7 @@ func (s *Server) Put(ctx context.Context, req *pb.Entry) (*pb.Response, error) {
 		err      error
 		span     zipkin.Span
 	)
+	fmt.Println("execute server put")
 
 	if s.Tracer != nil {
 		span, ctx = s.Tracer.StartSpanFromContext(ctx, "PutHandle")

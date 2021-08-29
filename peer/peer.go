@@ -2,6 +2,7 @@ package peer
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/openzipkin/zipkin-go"
 	zipkingrpc "github.com/openzipkin/zipkin-go/middleware/grpc"
@@ -24,7 +25,7 @@ func New(addr string, tracer *zipkin.Tracer) (*CommitClient, error) {
 		conn *grpc.ClientConn
 		err  error
 	)
-
+	// 增加最小超时时间MinConnectTimeout
 	connParams := grpc.ConnectParams{
 		Backoff: backoff.Config{
 			BaseDelay: 100 * time.Millisecond,
@@ -38,6 +39,7 @@ func New(addr string, tracer *zipkin.Tracer) (*CommitClient, error) {
 		conn, err = grpc.Dial(addr, grpc.WithConnectParams(connParams), grpc.WithInsecure())
 	}
 	if err != nil {
+		time.Sleep(10*time.Millisecond)
 		return nil, errors.Wrap(err, "failed to connect")
 	}
 	return &CommitClient{Connection: pb.NewCommitClient(conn), Tracer: tracer}, nil
@@ -49,6 +51,7 @@ func (client *CommitClient) Propose(ctx context.Context, req *pb.ProposeRequest)
 		span, ctx = client.Tracer.StartSpanFromContext(ctx, "Propose")
 		defer span.Finish()
 	}
+	fmt.Println("execute client propose")
 	return client.Connection.Propose(ctx, req)
 }
 
@@ -58,6 +61,7 @@ func (client *CommitClient) Precommit(ctx context.Context, req *pb.PrecommitRequ
 		span, ctx = client.Tracer.StartSpanFromContext(ctx, "Precommit")
 		defer span.Finish()
 	}
+	fmt.Println("execute client precommit")
 	return client.Connection.Precommit(ctx, req)
 }
 
@@ -67,6 +71,7 @@ func (client *CommitClient) Commit(ctx context.Context, req *pb.CommitRequest) (
 		span, ctx = client.Tracer.StartSpanFromContext(ctx, "Commit")
 		defer span.Finish()
 	}
+	fmt.Println("execute client commit: [index=",req.Index,"]")
 	return client.Connection.Commit(ctx, req)
 }
 
@@ -78,6 +83,7 @@ func (client *CommitClient) Put(ctx context.Context, key string, value []byte) (
 		span, ctx = client.Tracer.StartSpanFromContext(ctx, "Put")
 		defer span.Finish()
 	}
+	fmt.Println("execute client put")
 	return client.Connection.Put(ctx, &pb.Entry{Key: key, Value: value})
 }
 

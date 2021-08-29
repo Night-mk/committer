@@ -38,6 +38,31 @@ func WhiteListChecker(ctx context.Context,
 	return h, err
 }
 
+func WhiteListCheckerShard(ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler) (interface{}, error) {
+	peerinfo, ok := peer.FromContext(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "failed to retrieve peer info")
+	}
+
+	host, _, err := net.SplitHostPort(peerinfo.Addr.String())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	serv := info.Server.(*ServerShard)
+	if !helpers.Includes(serv.Config.Whitelist, host) {
+		return nil, status.Errorf(codes.PermissionDenied, "host %s is not in whitelist", host)
+	}
+
+	// Calls the handler
+	h, err := handler(ctx, req)
+
+	return h, err
+}
+
 /*
   blocking interceptors for tests
 */

@@ -3,6 +3,7 @@ package schema;
 import "google/protobuf/empty.proto";
 option go_package = "github.com/vadiminshakov/committer/proto";
 
+// 定义服务(Services)
 service Commit {
   rpc Propose(ProposeRequest) returns (Response);
   rpc Precommit(PrecommitRequest) returns (Response);
@@ -12,13 +13,15 @@ service Commit {
   rpc NodeInfo(google.protobuf.Empty) returns (Info);
 }
 
+// 每个字符 =后面的数字称为标识符，每个字段都需要提供一个唯一的标识符。
+// 标识符用来在消息的二进制格式中识别各个字段，一旦使用就不能够再改变，标识符的取值范围为 [1, 2^29 - 1] 。
 message ProposeRequest {
   string Key = 1;
   bytes Value = 2;
   CommitType CommitType = 3;
   uint64 index = 4;
 }
-
+// 枚举(Enumerations)
 enum CommitType {
   TWO_PHASE_COMMIT = 0;
   THREE_PHASE_COMMIT = 1;
@@ -29,6 +32,7 @@ enum Type {
   NACK = 1;
 }
 
+// 消息类型 使用 message 关键字定义
 message Response {
   Type type = 1;
   uint64 index = 2;

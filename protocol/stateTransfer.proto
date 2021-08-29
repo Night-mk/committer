@@ -1,0 +1,85 @@
+syntax = "proto3";
+package protocol;
+import "google/protobuf/empty.proto";
+option go_package = "./";
+
+// 定义grpc service
+service Commit {
+  rpc Propose(ProposeRequest) returns (Response);
+  rpc Precommit(PrecommitRequest) returns (Response);
+  rpc Commit(CommitRequest) returns (Response);
+  rpc StateTransfer(TransferRequest) returns (Response);
+  // rpc Put(Entry) returns (Response);
+  rpc Get(Msg) returns (Value);
+  rpc NodeInfo(google.protobuf.Empty) returns (Info);
+}
+
+// 定义协议种类
+enum CommitType {
+  TWO_PHASE_COMMIT = 0;
+  THREE_PHASE_COMMIT = 1;
+}
+// 定义Acknowledge character确认字符种类
+enum AckType {
+  ACK = 0;
+  NACK = 1;
+}
+
+// 定义follower种类
+enum FollowerType {
+  SOURCE = 0;
+  TARGET = 1;
+}
+
+// 定义状态迁移请求（支持单事务多状态转移 single-trans->multiple-state）
+// keylist是rlp编码后的数据，原数据形式：
+/**
+  keylist_ori = [
+    {address: xxxx; blockheight: 105; balance: 93;},
+    {address: xxxx; blockheight: 105; balance: 32;},
+    ...
+  ]
+ */
+message TransferRequest {
+  uint32 Source = 1;
+  uint32 Target = 2;
+  bytes Keylist = 3;
+  uint64 Index = 4;
+}
+
+// 定义2PC, 3PC的request, response消息
+message ProposeRequest {
+  uint32 Source = 1;
+  uint32 Target = 2;
+  bytes Keylist = 3;
+  CommitType CommitType = 4;
+  uint64 index = 5;
+}
+
+message PrecommitRequest {
+  uint64 index = 1;
+}
+
+message CommitRequest {
+  uint64 index = 1;
+  bool isRollback = 2;
+}
+
+message Response {
+  AckType type = 1;
+  uint64 index = 2;
+  FollowerType ftype = 3;
+}
+
+// 根据address获取当前状态数据(key=address, value=state)
+message Msg {
+  string key = 1;
+}
+
+message Value {
+  bytes value = 1;
+}
+// 根据当前height生成事务编号index
+message Info {
+  uint64 height = 1;
+}
